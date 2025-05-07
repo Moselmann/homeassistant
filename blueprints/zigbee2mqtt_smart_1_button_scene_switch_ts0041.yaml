@@ -3,7 +3,8 @@ blueprint:
   description: >
     Automate your Tuya TS0041 1-Button Scene Switch using Zigbee2MQTT.
     Supports single, double, and long press actions via MQTT.
-    Version: 20250506
+    Optimized for better maintainability and functionality.
+  version: 20250507
   domain: automation
   input:
     remote_name:
@@ -17,27 +18,25 @@ blueprint:
       default: zigbee2mqtt
       selector:
         text:
-
     button_single_press:
       name: Button - Single Press
       default: []
       selector:
         action: {}
-
     button_double_press:
       name: Button - Double Press
       default: []
       selector:
         action: {}
-
     button_long_press:
       name: Button - Long Press
       default: []
       selector:
         action: {}
+
   source_url: https://github.com/Moselmann/homeassistant/blob/main/blueprints/zigbee2mqtt_smart_1_button_scene_switch_ts0041.yaml
 
-mode: single
+mode: queued
 max_exceeded: silent
 
 trigger_variables:
@@ -47,18 +46,7 @@ trigger_variables:
 trigger:
   - platform: mqtt
     topic: '{{ z2m_base_topic ~ "/" ~ z2m_controller ~ "/action" }}'
-    payload: single
-    id: button-single
-
-  - platform: mqtt
-    topic: '{{ z2m_base_topic ~ "/" ~ z2m_controller ~ "/action" }}'
-    payload: double
-    id: button-double
-
-  - platform: mqtt
-    topic: '{{ z2m_base_topic ~ "/" ~ z2m_controller ~ "/action" }}'
-    payload: hold
-    id: button-hold
+    id: button-press
 
 action:
   - variables:
@@ -67,17 +55,16 @@ action:
 
   - choose:
       - conditions:
-          - condition: trigger
-            id: button-single
+          - condition: template
+            value_template: '{{ trigger.payload == "single" }}'
         sequence: !input button_single_press
 
       - conditions:
-          - condition: trigger
-            id: button-double
+          - condition: template
+            value_template: '{{ trigger.payload == "double" }}'
         sequence: !input button_double_press
 
       - conditions:
-          - condition: trigger
-            id: button-hold
+          - condition: template
+            value_template: '{{ trigger.payload == "hold" }}'
         sequence: !input button_long_press
-        
