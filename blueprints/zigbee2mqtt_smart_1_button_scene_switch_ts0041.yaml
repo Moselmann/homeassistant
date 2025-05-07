@@ -4,7 +4,7 @@ blueprint:
     Automate your Tuya TS0041 1-Button Scene Switch using Zigbee2MQTT.
     Supports single, double, and long press actions via MQTT.
     Optimized for better maintainability and functionality.
-  version: 20250507
+    Version: 20250507
   domain: automation
   input:
     remote_name:
