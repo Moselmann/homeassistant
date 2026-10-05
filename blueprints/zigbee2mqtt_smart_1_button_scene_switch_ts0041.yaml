@@ -1,40 +1,62 @@
 blueprint:
   name: Tuya TS0041 1-Button Scene Switch (Zigbee2MQTT)
-  description: >
-    Automate your Tuya TS0041 1-Button Scene Switch using Zigbee2MQTT.
-    Supports single, double, and long press actions via MQTT.
-    Optimized for better maintainability and functionality.
-    Version: 20250507
-  domain: automation
-  input:
-    remote_name:
-      name: (Zigbee2MQTT) Remote Name
-      description: The name of the switch in Zigbee2MQTT (e.g. tuya_button_1)
-      selector:
-        text:
-    base_topic:
-      name: (Zigbee2MQTT) Base MQTT Topic
-      description: Usually 'zigbee2mqtt'
-      default: zigbee2mqtt
-      selector:
-        text:
-    button_single_press:
-      name: Button - Single Press
-      default: []
-      selector:
-        action: {}
-    button_double_press:
-      name: Button - Double Press
-      default: []
-      selector:
-        action: {}
-    button_long_press:
-      name: Button - Long Press
-      default: []
-      selector:
-        action: {}
+  author: Moselmann
+  description: |
+    ## Control anything with the Tuya TS0041 1-button scene switch
 
+    Only for use with Zigbee2MQTT ([MQTT](https://www.home-assistant.io/integrations/mqtt)
+    + [Z2M add-on](https://www.zigbee2mqtt.io/guide/installation/03_ha_addon.html)).
+    The Home Assistant integration has to be enabled in Zigbee2MQTT, because it
+    publishes the button events to `<base topic>/<remote name>/action`.
+
+    Available controls: **single press**, **double press** and **hold**.
+    The TS0041 reports a hold only once and sends no release event.
+
+    Version: 20261005
   source_url: https://github.com/Moselmann/homeassistant/blob/main/blueprints/zigbee2mqtt_smart_1_button_scene_switch_ts0041.yaml
+  domain: automation
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    zigbee2mqtt:
+      name: Zigbee2MQTT
+      icon: mdi:remote
+      input:
+        remote_name:
+          name: Remote name
+          description: >-
+            The friendly name of the switch in Zigbee2MQTT (case-sensitive),
+            e.g. `tuya_button_1`.
+          selector:
+            text: {}
+        base_topic:
+          name: Base MQTT topic
+          description: The [base topic](https://www.zigbee2mqtt.io/guide/configuration/mqtt.html) configured in Zigbee2MQTT.
+          default: zigbee2mqtt
+          selector:
+            text: {}
+    button:
+      name: Button
+      icon: mdi:gesture-tap-button
+      input:
+        button_single_press:
+          name: Single press
+          description: Action(s) to run when the button is pressed once.
+          default: []
+          selector:
+            action: {}
+        button_double_press:
+          name: Double press
+          description: Action(s) to run when the button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        button_long_press:
+          name: Hold
+          description: Action(s) to run when the button is held down.
+          default: []
+          selector:
+            action: {}
 
 mode: queued
 max_exceeded: silent
@@ -43,28 +65,15 @@ trigger_variables:
   z2m_base_topic: !input base_topic
   z2m_controller: !input remote_name
 
-trigger:
-  - platform: mqtt
-    topic: '{{ z2m_base_topic ~ "/" ~ z2m_controller ~ "/action" }}'
-    id: button-press
+triggers:
+  - trigger: mqtt
+    topic: "{{ z2m_base_topic ~ '/' ~ z2m_controller ~ '/action' }}"
 
-action:
-  - variables:
-      z2m_base_topic: !input base_topic
-      z2m_controller: !input remote_name
-
+actions:
   - choose:
-      - conditions:
-          - condition: template
-            value_template: '{{ trigger.payload == "single" }}'
+      - conditions: "{{ trigger.payload == 'single' }}"
         sequence: !input button_single_press
-
-      - conditions:
-          - condition: template
-            value_template: '{{ trigger.payload == "double" }}'
+      - conditions: "{{ trigger.payload == 'double' }}"
         sequence: !input button_double_press
-
-      - conditions:
-          - condition: template
-            value_template: '{{ trigger.payload == "hold" }}'
+      - conditions: "{{ trigger.payload == 'hold' }}"
         sequence: !input button_long_press
